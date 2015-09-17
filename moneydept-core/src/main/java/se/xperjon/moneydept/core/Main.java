@@ -66,8 +66,8 @@ public class Main {
                 new Amount(960));
 
         event.setExpencies(Arrays.asList(e1, e2, e3, e4, e5, e6, e7, e8, e9));
-        event.calculateDepts();
-        event.printDeptResult();
+        event.processExpencies();
+        event.printResult();
     }
 
 }

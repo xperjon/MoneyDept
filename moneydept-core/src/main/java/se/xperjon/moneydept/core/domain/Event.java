@@ -1,10 +1,12 @@
 package se.xperjon.moneydept.core.domain;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -16,6 +18,7 @@ public class Event {
     private List<Expense> expencies;
     private Map<Person, List<Dept>> peronalDeptMap = new HashMap<>();
     private Map<Person, Amount> expenseMap = new HashMap<>();
+    private Map<Person, Map<Person, Amount>> personalDeptSumMap = new HashMap<>();
 
     public List<Person> getParticipators() {
         if (participators == null) {
@@ -43,34 +46,59 @@ public class Event {
         return expencies;
     }
 
-    public void calculateDepts() {
+    public void processExpencies() {
         initDeptMap();
         initExpenseMap();
-        getExpencies().stream().forEach(this::handleExpense);
+        getExpencies().stream().forEach(this::populateExpenseMap);
+        getExpencies().stream().forEach(this::populatePersonalDeptMap);
+        sumPersonalDepts();
     }
 
-    private void handleExpense(final Expense e) {
+    public void sumPersonalDepts() {
+        this.peronalDeptMap.forEach((Person from, List<Dept> l) -> {
+            Map<Person, List<Dept>> deptsPerPerson = l.stream().collect(Collectors.groupingBy(d -> d.getTo()));
+            deptsPerPerson.forEach((to, deptList) -> {
+                Double totalDept = deptList.stream().collect(Collectors.summingDouble(d -> d.getAmount().getAsDouble()));
+                Map<Person, Amount> hashMap = personalDeptSumMap.getOrDefault(from, new HashMap<>());
+                hashMap.put(to, new Amount(totalDept));
+                personalDeptSumMap.put(from, hashMap);
+            });
+        });
+    }
+
+    private void populateExpenseMap(final Expense e) {
         e.getFore().stream()
                 .filter(p -> !p.equals(e.getBy()))
+                .filter(p -> p.getRole().equals(Person.Role.TREAT))
                 .forEach(p -> {
-                    if (p.getRole().equals(Person.Role.PAYER)) {
-                        peronalDeptMap.get(p).add(new Dept(p, e.getBy(), getDeptAmount(e),e.getName()));
-                    } else if (p.getRole().equals(Person.Role.TREAT)) {
-                        Amount a = getExpenseAmount(e);
-//                        System.out.println("Person " + e.getBy().getName() + " adding " + a);
-                        expenseMap.put(e.getBy(), expenseMap.get(e.getBy()).add(a));
-//                        System.out.println("total: " + expenseMap.get(e.getBy()));
-                    }
+                    Amount newAmount = expenseMap.get(e.getBy()).plus(getExpenseAmount(e));
+                    expenseMap.put(e.getBy(), newAmount);
                 });
     }
 
-    public void printDeptResult() {
+    private void populatePersonalDeptMap(final Expense e) {
+        e.getFore().stream()
+                .filter(p -> !p.equals(e.getBy()))
+                .filter(p -> p.getRole().equals(Person.Role.PAYER))
+                .forEach(p -> {
+                    peronalDeptMap.get(p).add(new Dept(p, e.getBy(), getPersonalDeptAmount(e), e.getName()));
+                });
+    }
+
+    public void printResult() {
         peronalDeptMap.forEach((p, d) -> {
-            System.out.println("---------------------------------------");
-            System.out.println("Person: " + p.getName() + " has total expense for treaters: " + expenseMap.get(p));
-            System.out.println("Personal depts:");
-            d.stream().forEach(dept -> System.out.println(dept));
-            System.out.println("---------------------------------------");
+            if (p.getRole().equals(Person.Role.PAYER)) {
+                System.out.println("Person: " + p.getName() + " has total expense for treaters: " + expenseMap.get(p));
+                System.out.println("Personal depts:");
+                d.stream().forEach(dept -> System.out.println(dept));
+                Map<Person, Amount> personDeptSumMap = personalDeptSumMap.getOrDefault(p, Collections.EMPTY_MAP);
+                personDeptSumMap.forEach((to, amount) -> {
+                    Map<Person, Amount> orDefault = personalDeptSumMap.getOrDefault(to, Collections.EMPTY_MAP);
+                    Amount minus = orDefault.getOrDefault(p, new Amount(0));
+                    System.out.println("Total to: " + to + " : " + amount + " - " + minus + " = " + new Amount(amount.minus(minus)) + " bucks");
+                });
+                System.out.println("-----------------------------------------------------");
+            }
         });
     }
 
@@ -94,13 +122,13 @@ public class Event {
                 });
     }
 
-    private Amount getDeptAmount(Expense e) {
+    private Amount getPersonalDeptAmount(Expense e) {
         long numOfFore = e.getFore().stream().count();
         return e.getAomunt().divide(new Amount(numOfFore));
     }
 
     private Amount getExpenseAmount(Expense e) {
-        Amount a = getDeptAmount(e);
+        Amount a = getPersonalDeptAmount(e);
         long numOfFore = e.getFore().stream()
                 .filter(p -> !p.equals(e.getBy()))
                 .filter(p -> p.getRole().equals(Person.Role.TREAT))

@@ -18,6 +18,22 @@ public class Dept {
         this.name = name;
     }
 
+    public Person getFrom() {
+        return from;
+    }
+
+    public Person getTo() {
+        return to;
+    }
+
+    public Amount getAmount() {
+        return amount;
+    }
+
+    public String getName() {
+        return name;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -28,7 +44,6 @@ public class Dept {
         sb.append(amount);
         sb.append(" bucks for ");
         sb.append(name);
-        sb.append("!");
         return sb.toString();
     }
 

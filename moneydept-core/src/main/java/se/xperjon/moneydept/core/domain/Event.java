@@ -16,9 +16,9 @@ public class Event {
 
     private List<Person> participators;
     private List<Expense> expencies;
-    private Map<Person, List<Dept>> peronalDeptMap = new HashMap<>();
-    private Map<Person, Amount> expenseMap = new HashMap<>();
-    private Map<Person, Map<Person, Amount>> personalDeptSumMap = new HashMap<>();
+    private final Map<Person, List<Dept>> peronalDeptMap = new HashMap<>();
+    private final Map<Person, Amount> expenseMap = new HashMap<>();
+    private final Map<Person, Map<Person, Amount>> personalDeptSumMap = new HashMap<>();
 
     public List<Person> getParticipators() {
         if (participators == null) {
@@ -47,10 +47,11 @@ public class Event {
     }
 
     public void processExpencies() {
-        initDeptMap();
-        initExpenseMap();
         getExpencies().stream().forEach(this::populateExpenseMap);
         getExpencies().stream().forEach(this::populatePersonalDeptMap);
+        //get treaters payer
+        //divide treater expencies over all payers (/num/2);
+        //add peronal dept from all payers to treater payers.
         sumPersonalDepts();
     }
 
@@ -71,8 +72,8 @@ public class Event {
                 .filter(p -> !p.equals(e.getBy()))
                 .filter(p -> p.getRole().equals(Person.Role.TREAT))
                 .forEach(p -> {
-                    Amount newAmount = expenseMap.get(e.getBy()).plus(getExpenseAmount(e));
-                    expenseMap.put(e.getBy(), newAmount);
+                    Amount orDefault = expenseMap.getOrDefault(e.getBy(), new Amount(0));
+                    expenseMap.put(e.getBy(), orDefault.plus(getExpenseAmount(e)));
                 });
     }
 
@@ -81,7 +82,9 @@ public class Event {
                 .filter(p -> !p.equals(e.getBy()))
                 .filter(p -> p.getRole().equals(Person.Role.PAYER))
                 .forEach(p -> {
-                    peronalDeptMap.get(p).add(new Dept(p, e.getBy(), getPersonalDeptAmount(e), e.getName()));
+                    List<Dept> orDefault = peronalDeptMap.getOrDefault(p, new ArrayList<>());
+                    orDefault.add(new Dept(p, e.getBy(), getPersonalDeptAmount(e), e.getName()));
+                    peronalDeptMap.put(p, orDefault);
                 });
     }
 
@@ -100,26 +103,6 @@ public class Event {
                 System.out.println("-----------------------------------------------------");
             }
         });
-    }
-
-    private void initDeptMap() {
-        getParticipators().stream().forEach(p -> {
-            List<Dept> list = peronalDeptMap.get(p);
-            if (list == null) {
-                peronalDeptMap.put(p, new ArrayList<>());
-            }
-        });
-    }
-
-    private void initExpenseMap() {
-        getParticipators().stream()
-                .filter(p -> p.getRole().equals(Person.Role.PAYER))
-                .forEach(p -> {
-                    Amount a = expenseMap.get(p);
-                    if (a == null) {
-                        expenseMap.put(p, new Amount(0.0));
-                    }
-                });
     }
 
     private Amount getPersonalDeptAmount(Expense e) {

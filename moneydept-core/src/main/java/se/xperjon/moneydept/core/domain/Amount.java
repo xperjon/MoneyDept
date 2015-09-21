@@ -60,4 +60,7 @@ public class Amount {
         return value.doubleValue();
     }
 
+    public boolean isGreaterThanZero() {
+        return value.compareTo(BigDecimal.ZERO) == 1;
+    }
 }

@@ -18,6 +18,7 @@ public class Main {
         List<Person> persons = Arrays.asList(new Person("Jon-Erik", Person.Role.PAYER),
                 new Person("Emma", Person.Role.PAYER),
                 new Person("Jörgen", Person.Role.PAYER),
+                new Person("Christine", Person.Role.PAYER),
                 new Person("Adam", Person.Role.PAYER),
                 new Person("Mathilda", Person.Role.PAYER),
                 new Person("Pär", Person.Role.TREAT),
@@ -37,9 +38,9 @@ public class Main {
                 Arrays.asList(event.getPersonByName("Jon-Erik").get(), event.getPersonByName("Pär").get(), event.getPersonByName("Adam").get(), event.getPersonByName("Jörgen").get()),
                 new Amount(660));
 
-        Expense e4 = new Expense("Bärs", event.getPersonByName("Jon-Erik").get(),
-                Arrays.asList(event.getPersonByName("Jon-Erik").get(), event.getPersonByName("Pär").get(), event.getPersonByName("Adam").get(), event.getPersonByName("Lena").get()),
-                new Amount(304));
+//        Expense e4 = new Expense("Bärs", event.getPersonByName("Jon-Erik").get(),
+//                Arrays.asList(event.getPersonByName("Jon-Erik").get(), event.getPersonByName("Pär").get(), event.getPersonByName("Adam").get(), event.getPersonByName("Lena").get()),
+//                new Amount(304));
 
         Expense e5 = new Expense("Middag", event.getPersonByName("Jon-Erik").get(),
                 Arrays.asList(event.getPersonByName("Jon-Erik").get(), event.getPersonByName("Pär").get(), event.getPersonByName("Emma").get(), event.getPersonByName("Lena").get()),
@@ -65,7 +66,7 @@ public class Main {
                         event.getPersonByName("Mathilda").get(), event.getPersonByName("Emma").get(), event.getPersonByName("Lena").get()),
                 new Amount(960));
 
-        event.setExpencies(Arrays.asList(e1, e2, e3, e4, e5, e6, e7, e8, e9));
+        event.setExpencies(Arrays.asList(e1, e2, e3, e5, e6, e7, e8, e9));
         event.processExpencies();
         event.printResult();
     }

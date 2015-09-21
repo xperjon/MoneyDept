@@ -50,6 +50,20 @@ public class Event {
         getExpencies().stream().forEach(this::populateExpenseMap);
         getExpencies().stream().forEach(this::populatePersonalDeptMap);
         //get treaters payer
+        List<Person> treaterPayers = expenseMap.keySet().stream()
+                .collect(Collectors.partitioningBy(p -> expenseMap.get(p).isGreaterThanZero()))
+                .get(true);
+        treaterPayers.stream().forEach(payer -> {
+            Amount amount = expenseMap.get(payer);
+            Amount perPayingPerson = amount.divide(new Amount(6.0));
+            participators.stream()
+                    .filter(p -> p.getRole().equals(Person.Role.PAYER))
+                    .forEach(p -> {
+                        List<Dept> orDefault = peronalDeptMap.getOrDefault(p, new ArrayList<>());
+                        orDefault.add(new Dept(p, payer, perPayingPerson, "Utlägg P&L"));
+                        peronalDeptMap.put(p, orDefault);
+                    });
+        });
         //divide treater expencies over all payers (/num/2);
         //add peronal dept from all payers to treater payers.
         sumPersonalDepts();
@@ -68,13 +82,8 @@ public class Event {
     }
 
     private void populateExpenseMap(final Expense e) {
-        e.getFore().stream()
-                .filter(p -> !p.equals(e.getBy()))
-                .filter(p -> p.getRole().equals(Person.Role.TREAT))
-                .forEach(p -> {
-                    Amount orDefault = expenseMap.getOrDefault(e.getBy(), new Amount(0));
-                    expenseMap.put(e.getBy(), orDefault.plus(getExpenseAmount(e)));
-                });
+        Amount orDefault = expenseMap.getOrDefault(e.getBy(),  new Amount(0));
+        expenseMap.put(e.getBy(), orDefault.plus(getExpenseAmountForTreaters(e)));
     }
 
     private void populatePersonalDeptMap(final Expense e) {
@@ -83,7 +92,7 @@ public class Event {
                 .filter(p -> p.getRole().equals(Person.Role.PAYER))
                 .forEach(p -> {
                     List<Dept> orDefault = peronalDeptMap.getOrDefault(p, new ArrayList<>());
-                    orDefault.add(new Dept(p, e.getBy(), getPersonalDeptAmount(e), e.getName()));
+                    orDefault.add(new Dept(p, e.getBy(), getExpenseAmountPerAttendingPerson(e), e.getName()));
                     peronalDeptMap.put(p, orDefault);
                 });
     }
@@ -91,27 +100,34 @@ public class Event {
     public void printResult() {
         peronalDeptMap.forEach((p, d) -> {
             if (p.getRole().equals(Person.Role.PAYER)) {
-                System.out.println("Person: " + p.getName() + " has total expense for treaters: " + expenseMap.get(p));
-                System.out.println("Personal depts:");
+                System.out.println("Person: " + p.getName());
+                System.out.println("Utlägg för P&L");
+                expencies.stream().filter(ex -> ex.getBy().equals(p))
+                        .forEach(e -> {
+                            System.out.println(e.getName()+ " " +getExpenseAmountForTreaters(e));
+                        });
+                System.out.println("Total: " + expenseMap.getOrDefault(p,new Amount(0L)));
+                System.out.println("Personliga skulder:");
                 d.stream().forEach(dept -> System.out.println(dept));
                 Map<Person, Amount> personDeptSumMap = personalDeptSumMap.getOrDefault(p, Collections.EMPTY_MAP);
+                System.out.println("TOTAL:");
                 personDeptSumMap.forEach((to, amount) -> {
                     Map<Person, Amount> orDefault = personalDeptSumMap.getOrDefault(to, Collections.EMPTY_MAP);
                     Amount minus = orDefault.getOrDefault(p, new Amount(0));
-                    System.out.println("Total to: " + to + " : " + amount + " - " + minus + " = " + new Amount(amount.minus(minus)) + " bucks");
+                    System.out.println("Totalt till: " + to + " : " + amount + " - " + minus + " = " + new Amount(amount.minus(minus)) + ":-");
                 });
                 System.out.println("-----------------------------------------------------");
             }
         });
     }
 
-    private Amount getPersonalDeptAmount(Expense e) {
+    private Amount getExpenseAmountPerAttendingPerson(Expense e) {
         long numOfFore = e.getFore().stream().count();
         return e.getAomunt().divide(new Amount(numOfFore));
     }
 
-    private Amount getExpenseAmount(Expense e) {
-        Amount a = getPersonalDeptAmount(e);
+    private Amount getExpenseAmountForTreaters(Expense e) {
+        Amount a = getExpenseAmountPerAttendingPerson(e);
         long numOfFore = e.getFore().stream()
                 .filter(p -> !p.equals(e.getBy()))
                 .filter(p -> p.getRole().equals(Person.Role.TREAT))

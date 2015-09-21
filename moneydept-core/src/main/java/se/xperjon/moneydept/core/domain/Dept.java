@@ -38,11 +38,11 @@ public class Dept {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(from.getName());
-        sb.append(" owes ");
+        sb.append(" är skyldig ");
         sb.append(to.getName());
         sb.append(" ");
         sb.append(amount);
-        sb.append(" bucks for ");
+        sb.append(" för ");
         sb.append(name);
         return sb.toString();
     }

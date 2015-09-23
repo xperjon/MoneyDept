@@ -59,7 +59,7 @@ public class Main {
         Expense e8 = new Expense("Matkassar", event.getPersonByName("Jörgen").get(),
                 Arrays.asList(event.getPersonByName("Jon-Erik").get(), event.getPersonByName("Pär").get(), event.getPersonByName("Adam").get(), event.getPersonByName("Jörgen").get(),
                         event.getPersonByName("Mathilda").get(), event.getPersonByName("Emma").get(), event.getPersonByName("Lena").get()),
-                new Amount(825));
+                new Amount(687));
 
         Expense e9 = new Expense("Pizza", event.getPersonByName("Jörgen").get(),
                 Arrays.asList(event.getPersonByName("Jon-Erik").get(), event.getPersonByName("Pär").get(), event.getPersonByName("Adam").get(), event.getPersonByName("Jörgen").get(),
